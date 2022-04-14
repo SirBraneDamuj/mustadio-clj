@@ -80,12 +80,12 @@
 (def accessory-types #{"Accessory"})
 (def item-types (set/union weapon-types shield-types helmet-types body-types accessory-types))
 
-(defn- item-type->item-slot
+(defn item-type->item-slot
   [item-type]
   (cond
     (weapon-types item-type) :item-slot/weapon
     (shield-types item-type) :item-slot/shield
-    (helmet-types item-type) :item-slot/helmet
+    (helmet-types item-type) :item-slot/head
     (body-types item-type) :item-slot/body
     (accessory-types item-type) :item-slot/accessory))
 
