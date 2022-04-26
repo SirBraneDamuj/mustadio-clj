@@ -1,6 +1,7 @@
 (ns mustadio-clj.data.items
   (:require [mustadio-clj.types :as types]
             [mustadio-clj.util.string :as str-util]
+            [mustadio-clj.util.map :as map-util]
             [clojure.spec.alpha :as s]
             [clojure.string :as str]))
 
@@ -10,20 +11,6 @@
        (mapcat #(-> % (str-util/split-at-first " ") reverse))
        (apply hash-map)))
 
-(defn select-values [map ks]
-  (reduce #(conj %1 (map %2)) [] ks))
-
-(defn- string?->int
-  [s]
-  (when s (Integer/parseInt s)))
-
-(defn- percent-string?->int
-  [s]
-  (when s
-    (-> s
-        (str/replace "%" "")
-        string?->int)))
-
 (defmulti parse-stats (fn [slot _] slot))
 (defmethod parse-stats :item-slot/weapon
   [_ stats-map]
@@ -31,39 +18,39 @@
          absorb-wp
          heal-wp
          range
-         evade] (select-values stats-map
-                               ["WP" "WP (absorb)" "WP (heal)" "range" "evade"])]
-    {:stat/wp (string?->int wp)
-     :stat/absorb-wp (string?->int absorb-wp)
-     :stat/heal-wp (string?->int heal-wp)
-     :stat/range (string?->int range)
-     :stat/ev-percent (percent-string?->int evade)}))
+         evade] (map-util/select-values stats-map
+                                        ["WP" "WP (absorb)" "WP (heal)" "range" "evade"])]
+    {:stat/wp (str-util/string?->int wp)
+     :stat/absorb-wp (str-util/string?->int absorb-wp)
+     :stat/heal-wp (str-util/string?->int heal-wp)
+     :stat/range (str-util/string?->int range)
+     :stat/ev-percent (str-util/percent-string?->int evade)}))
 (defmethod parse-stats :item-slot/shield
   [_ stats-map]
   (let [[phys-ev-percent
-         magic-ev-percent] (select-values stats-map
-                                          ["phys evade" "magic evade"])]
-    {:stat/phys-ev-percent (percent-string?->int phys-ev-percent)
-     :stat/magic-ev-percent (percent-string?->int magic-ev-percent)}))
+         magic-ev-percent] (map-util/select-values stats-map
+                                                   ["phys evade" "magic evade"])]
+    {:stat/phys-ev-percent (str-util/percent-string?->int phys-ev-percent)
+     :stat/magic-ev-percent (str-util/percent-string?->int magic-ev-percent)}))
 (defmethod parse-stats :item-slot/head
   [_ stats-map]
-  (let [[hp mp] (select-values stats-map
-                               ["HP" "MP"])]
-    {:stat/hp (string?->int hp)
-     :stat/mp (string?->int mp)}))
+  (let [[hp mp] (map-util/select-values stats-map
+                                        ["HP" "MP"])]
+    {:stat/hp (str-util/string?->int hp)
+     :stat/mp (str-util/string?->int mp)}))
 (defmethod parse-stats :item-slot/body
   [_ stats-map]
-  (let [[hp mp] (select-values stats-map
-                               ["HP" "MP"])]
-    {:stat/hp (string?->int hp)
-     :stat/mp (string?->int mp)}))
+  (let [[hp mp] (map-util/select-values stats-map
+                                        ["HP" "MP"])]
+    {:stat/hp (str-util/string?->int hp)
+     :stat/mp (str-util/string?->int mp)}))
 (defmethod parse-stats :item-slot/accessory
   [_ stats-map]
   (let [[phys-ev-percent
-         magic-ev-percent] (select-values stats-map
-                                          ["phys evade" "magic evade"])]
-    {:stat/phys-ev-percent (percent-string?->int phys-ev-percent)
-     :stat/magic-ev-percent (percent-string?->int magic-ev-percent)}))
+         magic-ev-percent] (map-util/select-values stats-map
+                                                   ["phys evade" "magic evade"])]
+    {:stat/phys-ev-percent (str-util/percent-string?->int phys-ev-percent)
+     :stat/magic-ev-percent (str-util/percent-string?->int magic-ev-percent)}))
 
 (defn parse-info
   [info]
@@ -76,7 +63,6 @@
     (merge {:item/type item-type
             :item/slot item-slot}
            (parse-stats item-slot stats-map))))
-
 
 (defn parse-line
   [line]

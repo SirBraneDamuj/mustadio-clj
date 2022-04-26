@@ -9,3 +9,16 @@
             right (subs s (+ index (count value)))]
         [left right])
       [s])))
+
+(defn string?->int
+  "\"23\" -> 23. nil -> nil."
+  [s]
+  (when s (Integer/parseInt s)))
+
+(defn percent-string?->int
+  "\"23%\" -> 23. nil -> nil"
+  [s]
+  (when s
+    (-> s
+        (str/replace "%" "")
+        string?->int)))

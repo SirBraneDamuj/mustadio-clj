@@ -43,3 +43,39 @@
         (let [value "B"
               result (str-util/split-at-first s value)]
           (is (= ["Foo:" "ar, Baz"] result)))))))
+
+(deftest string?->int
+  (testing "an empty string"
+    (let [s ""
+          result (str-util/string?->int s)]
+      (is (= nil result))))
+  (testing "a number string"
+    (let [s "45"
+          result (str-util/string?->int s)]
+      (is (= 45 result))))
+  (testing "a number string with unary + operator"
+    (let [s "+53"
+          result (str-util/string?->int s)]
+      (is (= 53 result))))
+  (testing "a number string with unary - operator"
+    (let [s "-2"
+          result (str-util/string?->int s)]
+      (is (= -2 result)))))
+
+(deftest percent-string?->int
+  (testing "an empty string"
+    (let [s ""
+          result (str-util/string?->int s)]
+      (is (= nil result))))
+  (testing "a percent string"
+    (let [s "32%"
+          result (str-util/string?->int s)]
+      (is (= 32 result))))
+  (testing "a percent string with unary + operator"
+    (let [s "+22%"
+          result (str-util/string?->int s)]
+      (is (= 22 result))))
+  (testing "a percent string with unary - operator"
+    (let [s "-9%"
+          result (str-util/string?->int s)]
+      (is (= -9 result)))))

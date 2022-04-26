@@ -111,7 +111,6 @@
           (testing "helmets"
             (is (= 28 (count head))))
           (testing "bodies"
-            (println body)
             (is (= 36 (count body))))
           (testing "accessories"
             (is (= 32 (count accessory)))))))))
