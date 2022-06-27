@@ -45,6 +45,10 @@
           (is (= ["Foo:" "ar, Baz"] result)))))))
 
 (deftest string?->int
+  (testing "nil"
+    (let [s nil
+          result (str-util/string?->int s)]
+      (is (= nil result))))
   (testing "an empty string"
     (let [s ""
           result (str-util/string?->int s)]
@@ -63,19 +67,23 @@
       (is (= -2 result)))))
 
 (deftest percent-string?->int
+  (testing "nil"
+    (let [s nil
+          result (str-util/percent-string?->int s)]
+      (is (= nil result))))
   (testing "an empty string"
     (let [s ""
-          result (str-util/string?->int s)]
+          result (str-util/percent-string?->int s)]
       (is (= nil result))))
   (testing "a percent string"
     (let [s "32%"
-          result (str-util/string?->int s)]
+          result (str-util/percent-string?->int s)]
       (is (= 32 result))))
   (testing "a percent string with unary + operator"
     (let [s "+22%"
-          result (str-util/string?->int s)]
+          result (str-util/percent-string?->int s)]
       (is (= 22 result))))
   (testing "a percent string with unary - operator"
     (let [s "-9%"
-          result (str-util/string?->int s)]
+          result (str-util/percent-string?->int s)]
       (is (= -9 result)))))

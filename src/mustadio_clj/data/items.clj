@@ -1,9 +1,9 @@
 (ns mustadio-clj.data.items
   (:require [mustadio-clj.types :as types]
             [mustadio-clj.util.string :as str-util]
-            [mustadio-clj.util.map :as map-util]
             [clojure.spec.alpha :as s]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.pprint :as pp]))
 
 (defn assoc-stats
   [stats-tokens]
@@ -11,58 +11,165 @@
        (mapcat #(-> % (str-util/split-at-first " ") reverse))
        (apply hash-map)))
 
-(defmulti parse-stats (fn [slot _] slot))
-(defmethod parse-stats :item-slot/weapon
-  [_ stats-map]
-  (let [[wp
-         absorb-wp
-         heal-wp
-         range
-         evade] (map-util/select-values stats-map
-                                        ["WP" "WP (absorb)" "WP (heal)" "range" "evade"])]
-    {:stat/wp (str-util/string?->int wp)
-     :stat/absorb-wp (str-util/string?->int absorb-wp)
-     :stat/heal-wp (str-util/string?->int heal-wp)
-     :stat/range (str-util/string?->int range)
-     :stat/ev-percent (str-util/percent-string?->int evade)}))
-(defmethod parse-stats :item-slot/shield
-  [_ stats-map]
-  (let [[phys-ev-percent
-         magic-ev-percent] (map-util/select-values stats-map
-                                                   ["phys evade" "magic evade"])]
-    {:stat/phys-ev-percent (str-util/percent-string?->int phys-ev-percent)
-     :stat/magic-ev-percent (str-util/percent-string?->int magic-ev-percent)}))
-(defmethod parse-stats :item-slot/head
-  [_ stats-map]
-  (let [[hp mp] (map-util/select-values stats-map
-                                        ["HP" "MP"])]
-    {:stat/hp (str-util/string?->int hp)
-     :stat/mp (str-util/string?->int mp)}))
-(defmethod parse-stats :item-slot/body
-  [_ stats-map]
-  (let [[hp mp] (map-util/select-values stats-map
-                                        ["HP" "MP"])]
-    {:stat/hp (str-util/string?->int hp)
-     :stat/mp (str-util/string?->int mp)}))
-(defmethod parse-stats :item-slot/accessory
-  [_ stats-map]
-  (let [[phys-ev-percent
-         magic-ev-percent] (map-util/select-values stats-map
-                                                   ["phys evade" "magic evade"])]
-    {:stat/phys-ev-percent (str-util/percent-string?->int phys-ev-percent)
-     :stat/magic-ev-percent (str-util/percent-string?->int magic-ev-percent)}))
+(def stats-labels
+  {"WP" :stat/wp
+   "WP (absorb)" :stat/absorb-wp
+   "WP (heal)" :stat/heal-wp
+   "range" :stat/range
+   "evade" :stat/ev-percent
+   "phys evade" :stat/phys-ev-percent
+   "magic evade" :stat/magic-ev-percent
+   "HP" :stat/hp
+   "MP" :stat/mp
+   "Speed" :stat/speed
+   "Move" :stat/move
+   "Jump" :stat/jump
+   "PA" :stat/pa
+   "MA" :stat/ma})
+
+(defn- handle-stat-pair
+  [[label value]]
+  (let [k (get stats-labels label)
+        v (cond
+            (contains?
+             #{:stat/ev-percent :stat/phys-ev-percent :stat/magic-ev-percent}
+             k)
+            (str-util/percent-string?->int value)
+
+            :else
+            (str-util/string?->int value))]
+    [k v]))
+
+(defn parse-stats-tokens
+  [stats-tokens]
+  (->> stats-tokens
+       assoc-stats
+       (map handle-stat-pair)
+       flatten
+       (apply hash-map)))
+
+(defn parse-csv-from-prefix
+  [prefix s]
+  (let [[_ rest] (str/split s (re-pattern prefix))]
+    (str/split rest #", ")))
+
+;; todo programmatically iterate through these
+(def csv-effect-prefixes
+  {"Immune" :stat/status-immunities
+   "Initial" :stat/initial-statuses
+   "Permanent" :stat/perm-statuses
+   "Chance to Add" :stat/chance-to-add
+   "Chance to add" :stat/chance-to-add
+   "Chance to Cancel" :stat/chance-to-cancel
+   "Absorb" :stat/absorbed-elements
+   "Strengthens" :stat/strengthened-elements})
+
+(defn parse-effect-token
+  [effect-token]
+  (cond
+    (str/starts-with? effect-token "+")
+    (parse-stats-tokens (str/split effect-token #", "))
+
+    (str/starts-with? effect-token "Immune ")
+    {:stat/status-immunities (parse-csv-from-prefix
+                              "Immune "
+                              effect-token)}
+
+    (str/starts-with? effect-token "Initial ")
+    {:stat/initial-statuses (parse-csv-from-prefix
+                             "Initial "
+                             effect-token)}
+
+    (str/starts-with? effect-token "Permanent ")
+    {:stat/perm-statuses (parse-csv-from-prefix
+                          "Permanent "
+                          effect-token)}
+
+    (str/starts-with? effect-token "Chance to Add ")
+    {:stat/chance-to-add (parse-csv-from-prefix
+                          "Chance to Add "
+                          effect-token)}
+
+    (str/starts-with? effect-token "Chance to add ")
+    {:stat/chance-to-add (parse-csv-from-prefix
+                          "Chance to add "
+                          effect-token)}
+
+    (str/starts-with? effect-token "Chance to Cancel ")
+    {:stat/chance-to-cancel (parse-csv-from-prefix
+                             "Chance to Cancel "
+                             effect-token)}
+
+    (str/starts-with? effect-token "Absorb ")
+    {:stat/absorbed-elements (parse-csv-from-prefix
+                              "Absorb "
+                              effect-token)}
+
+    (str/starts-with? effect-token "Strengthens ")
+    {:stat/strengthened-elements (parse-csv-from-prefix
+                                  "Strengthens "
+                                  effect-token)}
+
+    (str/starts-with? effect-token "Chance to cast ")
+    {:stat/chance-to-cast (parse-csv-from-prefix
+                           "Chance to cast "
+                           effect-token)}
+
+    (str/starts-with? effect-token "Chance to Cast ")
+    {:stat/chance-to-cast (parse-csv-from-prefix
+                           "Chance to Cast "
+                           effect-token)}
+
+    :else
+    {}))
+
+(defn parse-effect
+  [effect]
+  (let [tokens (str/split effect #"; ")
+        effects (map parse-effect-token tokens)]
+    (apply merge effects)))
+
+(comment
+  (defn bar [[x y]] (str x y))
+  (def foo {:a :b :c :d})
+  (->> foo
+       (map bar))
+  (require '[clojure.pprint :as pp])
+
+  (def eff  "Effect: Chance to Add Faith; +1 Speed, +1 Move, +1 Jump; Immune Innocent; Initial Faith")
+  (parse-effect eff)
+  (parse-effect "+2 PA, +3 MA, +4 Speed, +5 Move, +6 Jump"))
+
+(defn parse-misc-token
+  [misc-token]
+  (let [[prefix suffix] (str-util/split-at-first misc-token ": ")]
+    (cond
+      (= prefix "Element")
+      {:stat/element suffix}
+
+      (= prefix "Effect")
+      (merge {:item/effect misc-token}
+             (parse-effect suffix))
+
+      :else
+      {})))
+
+(defn parse-misc
+  [misc-tokens]
+  (apply merge (map parse-misc-token misc-tokens)))
 
 (defn parse-info
   [info]
-  (let [[stats effect] (str/split info #"(\. )|(\.)")
+  (let [[stats & misc-tokens] (str/split info #"(\. )|(\.)")
         stats-tokens (str/split stats #", ")
         only-stats (drop-last stats-tokens)
-        stats-map (assoc-stats only-stats)
+        #_#_stats-map (assoc-stats only-stats)
         item-type (last stats-tokens)
         item-slot (types/item-type->item-slot item-type)]
     (merge {:item/type item-type
             :item/slot item-slot}
-           (parse-stats item-slot stats-map))))
+           (parse-stats-tokens only-stats)
+           (parse-misc misc-tokens))))
 
 (defn parse-line
   [line]
@@ -73,6 +180,7 @@
             :item/info info}
            parsed-info)))
 
+;; I consider these abilities and do not parse them as equipable items.
 (defn- ignored-line?
   [line]
   (or

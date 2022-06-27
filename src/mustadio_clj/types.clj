@@ -35,6 +35,13 @@
 (s/def :stat/phys-ev-percent nat-int?)
 (s/def :stat/magic-ev-percent nat-int?)
 (s/def :stat/element string?)
+(s/def :stat/strengthened-elements (s/coll-of string?))
+(s/def :stat/absorbed-elements (s/coll-of string?))
+(s/def :stat/initial-statuses (s/coll-of string?))
+(s/def :stat/perm-statuses (s/coll-of string?))
+(s/def :stat/chance-to-add (s/coll-of string?))
+(s/def :stat/chance-to-cancel (s/coll-of string?))
+(s/def :stat/status-immunities (s/coll-of string?))
 
 ;; Jobs
 
@@ -94,8 +101,6 @@
 (s/def :item/slot item-slots)
 (s/def :item/info string?)
 (s/def :item/effect string?)
-(s/def :item/initial-statuses (s/coll-of string?))
-(s/def :item/perm-statuses (s/coll-of string?))
 
 (s/def :item/base
   (s/keys :req [:item/name
@@ -107,7 +112,16 @@
                 :stat/move
                 :stat/jump
                 :stat/pa
-                :stat/ma]))
+                :stat/ma
+                :item/effect
+                :stat/initial-statuses
+                :stat/perm-statuses
+                :stat/status-immunities
+                :stat/chance-to-add
+                :stat/chance-to-cancel
+                :stat/chance-to-cast
+                :stat/absorbed-elements
+                :stat/strengthened-elements]))
 
 (s/def :item/weapon
   (s/keys :req [(or :stat/wp :stat/absorb-wp :stat/heal-wp)

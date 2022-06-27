@@ -5,6 +5,57 @@
             [mustadio-clj.fftbg.fake :refer [fake-client]]
             [clojure.spec.alpha :as s]
             [clojure.test :refer [is testing deftest]]))
+(deftest parse-effect
+  (testing "An effect with all stats"
+    (let [effect "+2 PA, +3 MA, +4 Speed, +5 Move, +6 Jump"
+          {:keys [:stat/pa
+                  :stat/ma
+                  :stat/speed
+                  :stat/move
+                  :stat/jump]} (items/parse-effect effect)]
+      (is (= 2 pa))
+      (is (= 3 ma))
+      (is (= 4 speed))
+      (is (= 5 move))
+      (is (= 6 jump))))
+  (testing "An effect with status immunities"
+    (let [effect "Immune Silence, Frog, Innocent"
+          {:keys [:stat/status-immunities]} (items/parse-effect effect)]
+      (is (= #{"Silence" "Frog" "Innocent"} (set status-immunities)))))
+  (testing "An effect with initial statuses"
+    (let [effect "Initial Silence, Frog, Innocent"
+          {:keys [:stat/initial-statuses]} (items/parse-effect effect)]
+      (is (= #{"Silence" "Frog" "Innocent"} (set initial-statuses)))))
+  (testing "An effect with permanent statuses"
+    (let [effect "Permanent Silence, Frog, Innocent"
+          {:keys [:stat/perm-statuses]} (items/parse-effect effect)]
+      (is (= #{"Silence" "Frog" "Innocent"} (set perm-statuses)))))
+  (testing "An effect with status cancels"
+    (let [effect "Chance to Cancel Silence, Frog, Innocent"
+          {:keys [:stat/chance-to-cancel]} (items/parse-effect effect)]
+      (is (= #{"Silence" "Frog" "Innocent"} (set chance-to-cancel)))))
+  (testing "An effect with status adds"
+    (let [effect "Chance to Add Silence, Frog, Innocent"
+          {:keys [:stat/chance-to-add]} (items/parse-effect effect)]
+      (is (= #{"Silence" "Frog" "Innocent"} (set chance-to-add)))))
+  (testing "An effect with status adds (lowercase)"
+    (let [effect "Chance to add Silence, Frog, Innocent"
+          {:keys [:stat/chance-to-add]} (items/parse-effect effect)]
+      (is (= #{"Silence" "Frog" "Innocent"} (set chance-to-add)))))
+  (testing "An effect with absorbed element"
+    (let [effect "Absorb Fire, Ice"
+          {:keys [:stat/absorbed-elements]} (items/parse-effect effect)]
+      (is (= #{"Fire" "Ice"} (set absorbed-elements)))))
+  (testing "An effect with strengthened element"
+    (let [effect "Strengthens Fire, Ice"
+          {:keys [:stat/strengthened-elements]} (items/parse-effect effect)]
+      (is (= #{"Fire" "Ice"} (set strengthened-elements)))))
+  (testing "An effect with stats and something else"
+    (let [effect "Foo Bar; +3 Speed, +1 PA; Xyz Abc"
+          {:keys [:stat/speed
+                  :stat/pa]} (items/parse-effect effect)]
+      (is (= 3 speed))
+      (is (= 1 pa)))))
 
 (deftest parse-line
   (testing "A regular weapon"
@@ -14,13 +65,19 @@
                   :stat/heal-wp
                   :stat/range
                   :stat/ev-percent
-                  :item/slot]} (items/parse-line line)]
+                  :stat/element
+                  :stat/chance-to-cast
+                  :item/slot
+                  :item/effect]} (items/parse-line line)]
       (is (= 13 wp))
       (is (= nil absorb-wp))
       (is (= nil heal-wp))
       (is (= 1 range))
       (is (= 1 ev-percent))
-      (is (= :item-slot/weapon slot))))
+      (is (= :item-slot/weapon slot))
+      (is (= "Fire" element))
+      (is (= #{"Fire 2"} (set chance-to-cast)))
+      (is (= "Effect: Chance to cast Fire 2" effect))))
   (testing "A healing weapon"
     (let [line "Healing Staff: 4 WP (heal), 1 range, 17% evade, Staff."
           {:keys [:stat/wp
@@ -90,8 +147,19 @@
                   :item/slot]} (items/parse-line line)]
       (is (= nil phys-ev-percent))
       (is (= nil magic-ev-percent))
-      (is (= :item-slot/accessory slot)))))
-
+      (is (= :item-slot/accessory slot))))
+  (testing "A weapon without any misc"
+    (let [line "Main Gauche: 7 WP, 1 range, 40% evade, Knife."
+          {:keys [:stat/wp
+                  :stat/range
+                  :stat/ev-percent
+                  :item/name
+                  :item/slot]} (items/parse-line line)]
+      (is (= :item-slot/weapon slot))
+      (is (= 7 wp))
+      (is (= 40 ev-percent))
+      (is (= 1 range))
+      (is (= "Main Gauche" name)))))
 (deftest parse-file
   (testing "Parses the entire sample file"
     (let [file-content (get-dump-file fake-client "infoitem.txt")
