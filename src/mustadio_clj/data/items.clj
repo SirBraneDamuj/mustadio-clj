@@ -129,17 +129,6 @@
         effects (map parse-effect-token tokens)]
     (apply merge effects)))
 
-(comment
-  (defn bar [[x y]] (str x y))
-  (def foo {:a :b :c :d})
-  (->> foo
-       (map bar))
-  (require '[clojure.pprint :as pp])
-
-  (def eff  "Effect: Chance to Add Faith; +1 Speed, +1 Move, +1 Jump; Immune Innocent; Initial Faith")
-  (parse-effect eff)
-  (parse-effect "+2 PA, +3 MA, +4 Speed, +5 Move, +6 Jump"))
-
 (defn parse-misc-token
   [misc-token]
   (let [[prefix suffix] (str-util/split-at-first misc-token ": ")]
@@ -180,7 +169,7 @@
             :item/info info}
            parsed-info)))
 
-;; I consider these abilities and do not parse them as equipable items.
+;; I consider these to be abilities and do not parse them as equipable items.
 (defn- ignored-line?
   [line]
   (or
