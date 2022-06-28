@@ -2,8 +2,7 @@
   (:require [mustadio-clj.types :as types]
             [mustadio-clj.util.string :as str-util]
             [clojure.spec.alpha :as s]
-            [clojure.string :as str]
-            [clojure.pprint :as pp]))
+            [clojure.string :as str]))
 
 (defn assoc-stats
   [stats-tokens]
